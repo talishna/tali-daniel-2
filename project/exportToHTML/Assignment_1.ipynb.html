@@ -1,0 +1,543 @@
+<html>
+<head>
+<title>Assignment_1.ipynb</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #808080;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #6a8759;}
+.s4 { color: #6897bb;}
+.s5 { color: #629755; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Assignment_1.ipynb</font>
+</center></td></tr></table>
+<pre><span class="s0">#%% md 
+</span><span class="s1"># Assignment 1: Signal type classification 
+ 
+**Deadline**: Jan 31, 2024 
+ 
+**Submission: Submit a PDF export of the completed notebook as well as the .ipynb file.** 
+ 
+ 
+ 
+In this assignment, we will build Neural Networks models to predict types of signals.  The file `raw_data.csv` contains 20,000 signals each having 501 time samples and labels. 
+ 
+ 
+**Note** that you are not allowed to import additional packages in this assignment **(especially not PyTorch)**. One of the objectives is to understand how the training procedure actually operates, before working with PyTorch's autograd engine which does it all for us. 
+</span><span class="s0">#%% md 
+</span><span class="s1"># Question 1 - Data (21%) 
+Start by setting up a Google Colab notebook in which to do your work. 
+ 
+To process and read the data, we use the popular pandas package for data analysis. 
+</span><span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">pandas </span><span class="s2">as </span><span class="s1">pd</span>
+<span class="s2">import </span><span class="s1">numpy </span><span class="s2">as </span><span class="s1">np</span>
+<span class="s2">import </span><span class="s1">matplotlib.pyplot </span><span class="s2">as </span><span class="s1">plt</span>
+<span class="s2">import </span><span class="s1">scipy</span>
+<span class="s2">import </span><span class="s1">scipy.io</span>
+<span class="s0">#%% md 
+</span><span class="s1">Now that your notebook is set up, we can load the data into the notebook. The code below loading the data through mounting Google Drive. 
+ 
+Here are some resources to help you get started: 
+ 
+- http://colab.research.google.com/notebooks/io.ipynb 
+ 
+</span><span class="s0">#%% 
+</span>
+<span class="s1">raw_df = pd.read_csv(</span><span class="s3">'raw_data.csv'</span><span class="s1">) </span><span class="s0"># TODO - UPDATE THE FILE NAME!</span>
+<span class="s1">t_label = [</span><span class="s3">&quot;classes&quot;</span><span class="s1">]</span>
+<span class="s1">raw_labels = list(raw_df.columns[</span><span class="s4">1</span><span class="s1">:])</span>
+<span class="s0">#%% md 
+</span><span class="s1">Now that the data is loaded to your Colab notebook and you should be able to display the Pandas 
+DataFrame `raw_df` as a table: 
+</span><span class="s0">#%% 
+</span><span class="s1">raw_df</span>
+<span class="s0">#%% md 
+</span><span class="s1">Next we shall add noise to the raw data: 
+</span><span class="s0">#%% 
+</span><span class="s1">data_arr = raw_df[raw_labels].to_numpy()</span>
+<span class="s1">data_arr = data_arr + np.random.randn(</span><span class="s4">1</span><span class="s1">)</span>
+<span class="s1">data_df = pd.DataFrame(data_arr</span><span class="s2">, </span><span class="s1">columns=raw_labels)</span>
+<span class="s1">df = raw_df[t_label].join(data_df)</span>
+<span class="s1">df</span>
+<span class="s0">#%% 
+</span><span class="s3">&quot;&quot;&quot; 
+Plotting the raw data: 
+Generate the 12 plots starting from plot num_id, 
+where num_id is the last number of your ID 
+ 
+&quot;&quot;&quot;</span>
+
+<span class="s1">num_plots = </span><span class="s4">12</span>
+<span class="s1">num_id = </span><span class="s4">2 </span><span class="s0"># Please fill the last number of your ID</span>
+<span class="s1">x_data = df.iloc[num_id:num_plots + num_id</span><span class="s2">, </span><span class="s4">1</span><span class="s1">:].values </span><span class="s0"># converting all values in the data frame to a numpy array</span>
+<span class="s1">y_data = df.iloc[num_id:num_plots + num_id</span><span class="s2">, </span><span class="s4">0</span><span class="s1">].values </span><span class="s0"># converting the labels in the data frame to a numpy array</span>
+<span class="s1">plt.figure()</span>
+<span class="s2">for </span><span class="s1">idx </span><span class="s2">in </span><span class="s1">range(num_plots):</span>
+  <span class="s1">plt.subplot(</span><span class="s4">3</span><span class="s2">, </span><span class="s4">4</span><span class="s2">, </span><span class="s1">idx+</span><span class="s4">1</span><span class="s1">)</span>
+  <span class="s1">plt.plot(x_data[idx])</span>
+  <span class="s1">plt.title(y_data[idx])</span>
+  <span class="s1">plt.rcParams[</span><span class="s3">'font.size'</span><span class="s1">] = </span><span class="s4">8</span>
+  <span class="s1">plt.subplots_adjust(left=</span><span class="s4">0.1</span><span class="s2">,</span>
+                    <span class="s1">bottom=</span><span class="s4">0.1</span><span class="s2">,</span>
+                    <span class="s1">right=</span><span class="s4">0.9</span><span class="s2">,</span>
+                    <span class="s1">top=</span><span class="s4">0.9</span><span class="s2">,</span>
+                    <span class="s1">wspace=</span><span class="s4">0.5</span><span class="s2">,</span>
+                    <span class="s1">hspace=</span><span class="s4">0.7</span><span class="s1">)</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">Our neural network will take as input the noisy raw data and predict its class. 
+Since we have two string classes, we will label them by numbers, 
+where each `0` represent the &quot;Gaussian&quot; class, while `1` represent the &quot;ThreeFrequency class&quot;. 
+</span><span class="s0">#%% 
+</span><span class="s1">df.replace({</span><span class="s3">'Gaussian'</span><span class="s1">: </span><span class="s4">0</span><span class="s2">, </span><span class="s3">'ThreeFrequency'</span><span class="s1">: </span><span class="s4">1</span><span class="s1">}</span><span class="s2">, </span><span class="s1">inplace=</span><span class="s2">True</span><span class="s1">)</span>
+<span class="s0">#%% 
+</span><span class="s1">df.head(</span><span class="s4">12</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">### Part (a) -- 7% 
+ 
+After converting the classes into numbers we can split them into training and test sets. 
+ 
+</span><span class="s0">#%% 
+</span><span class="s1">train_df = df[:</span><span class="s4">18000</span><span class="s1">]</span>
+<span class="s1">test_df = df[</span><span class="s4">18000</span><span class="s1">:]</span>
+
+<span class="s0"># Convert to numpy</span>
+<span class="s1">train_xs = train_df[raw_labels].to_numpy() </span><span class="s0"># the different variables</span>
+<span class="s1">train_ts = train_df[t_label].to_numpy() </span><span class="s0"># the classes</span>
+<span class="s1">test_xs = test_df[raw_labels].to_numpy()</span>
+<span class="s1">test_ts = test_df[t_label].to_numpy()</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">When we split the data into a train test split, we want to make sure that no same spectrogram data ends up in both the training and test set. 
+ 
+Explain why it would be problematic to have 
+some spectrograms data in the training set, and other same spectrograms data in the 
+test set. (Hint: Remember that we want our test accuracy to predict how well the model 
+will perform in practice on a data it hasn't learned about.) 
+</span><span class="s0">#%% md 
+</span><span class="s1">#### Write your explanation here: 
+If the same data is in both the training and test sets, the model will be able to recognize the data and may perform well on the test set even if it has not learned the underlying patterns. This can lead to an overestimation of the model’s accuracy and make it difficult to evaluate the performance of the model on new data (which it didn't learn). 
+ 
+</span><span class="s0">#%% md 
+</span><span class="s1">### Part (b) -- 7% 
+ 
+It can be beneficial to **normalize** the columns, so that each column (feature) 
+has the *same mean and standard deviation*. 
+</span><span class="s0">#%% 
+</span><span class="s1">feature_means = train_df.mean()[</span><span class="s4">1</span><span class="s1">:].to_numpy() </span><span class="s0"># the [1:] removes the mean of the &quot;class&quot; field</span>
+<span class="s1">feature_stds = train_df.std()[</span><span class="s4">1</span><span class="s1">:].to_numpy()</span>
+
+
+<span class="s1">train_xs_norm = (train_xs - feature_means) / feature_stds</span>
+<span class="s1">test_xs_norm = (test_xs - feature_means) / feature_stds</span>
+<span class="s0">#%% md 
+</span><span class="s1">Notice how in our code, we normalized the test set using the *training data means and standard deviations*. 
+This is *not* a bug. 
+ 
+Explain why it would be improper to compute and use test set means 
+and standard deviations. (Hint: Remember what we want to use the test accuracy to measure.) 
+ 
+</span><span class="s0">#%% md 
+</span><span class="s1">#### Write your explanation here: 
+The test set is supposed to represent new, unseen data that the model has not been trained on. If we use the mean and standard deviation of the test set to normalize the test set we would be introducing information from the test set into the model which can lead to optimistic performance estimates. 
+</span><span class="s0">#%% md 
+</span><span class="s1">### Part (c) -- 7% 
+ 
+Finally, we'll move some of the data in our training set into a validation set. 
+ 
+Explain why we should limit how many times we use the test set, and that we should use the validation 
+set during the model building process. 
+</span><span class="s0">#%% 
+# Shuffle the training set</span>
+<span class="s0"># xs are the var0, var1,...</span>
+<span class="s0"># ts are the classes</span>
+<span class="s1">reindex = np.random.permutation(len(train_xs))</span>
+<span class="s1">train_xs = train_xs[reindex]</span>
+<span class="s1">train_xs_norm = train_xs_norm[reindex]</span>
+<span class="s1">train_ts = train_ts[reindex]</span>
+
+<span class="s0"># use the first 1800 elements of `train_xs` as the validation set</span>
+<span class="s0"># 10% on the training data</span>
+<span class="s1">train_xs</span><span class="s2">, </span><span class="s1">val_xs = train_xs[</span><span class="s4">1800</span><span class="s1">:]</span><span class="s2">, </span><span class="s1">train_xs[:</span><span class="s4">1800</span><span class="s1">]</span>
+<span class="s1">train_norm_xs</span><span class="s2">, </span><span class="s1">val_norm_xs = train_xs_norm[</span><span class="s4">1800</span><span class="s1">:]</span><span class="s2">, </span><span class="s1">train_xs_norm[:</span><span class="s4">1800</span><span class="s1">]</span>
+<span class="s1">train_ts</span><span class="s2">, </span><span class="s1">val_ts = train_ts[</span><span class="s4">1800</span><span class="s1">:]</span><span class="s2">, </span><span class="s1">train_ts[:</span><span class="s4">1800</span><span class="s1">]</span>
+<span class="s0">#%% md 
+</span><span class="s1">#### Write your explanation here: 
+The test set is supposed to be used to evaluate the model's performance so we don't want the model to use it before it's trained and tuned. 
+If we use the test set multiple times during the model building process, we would be introducing information from the test set into the model. 
+ 
+The validation set is used to evaluate the performance of the model during training and to tune the model’s hyperparameters. By using a validation set, we can ensure that the model is not influenced by information from the test set and that its performance estimates are reliable. 
+</span><span class="s0">#%% md 
+</span><span class="s1"># Question 2 - Classification (79%) 
+ 
+We will first build a *classification* model to perform spectrogram classification. 
+These helper functions are written for you. **All other code that you write in this section should be vectorized whenever possible (i.e., avoid unnecessary loops)**. 
+</span><span class="s0">#%% 
+</span><span class="s2">def </span><span class="s1">sigmoid(z):</span>
+  <span class="s2">return </span><span class="s4">1 </span><span class="s1">/ (</span><span class="s4">1 </span><span class="s1">+ np.exp(-z))</span>
+
+<span class="s2">def </span><span class="s1">mse_cost(y</span><span class="s2">, </span><span class="s1">t):</span>
+  <span class="s2">return </span><span class="s1">(np.linalg.norm((y - t)</span><span class="s2">, </span><span class="s1">ord=</span><span class="s4">2</span><span class="s1">)**</span><span class="s4">2</span><span class="s1">)/len(y)</span>
+
+<span class="s2">def </span><span class="s1">get_accuracy(y</span><span class="s2">, </span><span class="s1">t):</span>
+  <span class="s1">acc = </span><span class="s4">0</span>
+  <span class="s1">N = </span><span class="s4">0</span>
+  <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">range(len(y)):</span>
+    <span class="s1">N += </span><span class="s4">1</span>
+    <span class="s2">if </span><span class="s1">(y[i] &gt;= </span><span class="s4">0.5 </span><span class="s2">and </span><span class="s1">t[i] == </span><span class="s4">1</span><span class="s1">) </span><span class="s2">or </span><span class="s1">(y[i] &lt; </span><span class="s4">0.5 </span><span class="s2">and </span><span class="s1">t[i] == </span><span class="s4">0</span><span class="s1">):</span>
+      <span class="s1">acc += </span><span class="s4">1</span>
+  <span class="s2">return </span><span class="s1">acc / N</span>
+<span class="s0">#%% md 
+</span><span class="s1">### Part (a) -- 8% 
+ 
+Write a function `pred` that computes the prediction `y` based on logistic regression, i.e., a single layer with weights `w` and bias `b`. The output is given by: 
+\begin{equation} 
+y = \sigma({\bf w}^T {\bf x} + b), 
+\end{equation} 
+ 
+where the value of $y$ is an estimate of the probability that the estimated spectrogram is the true one. 
+</span><span class="s0">#%% md 
+</span><span class="s1">####Write your code below 
+</span><span class="s0">#%% 
+</span><span class="s2">def </span><span class="s1">pred(w</span><span class="s2">, </span><span class="s1">b</span><span class="s2">, </span><span class="s1">X):</span>
+  <span class="s5">&quot;&quot;&quot; 
+  Returns the prediction `y` of the target based on the weights `w` and scalar bias `b`. 
+ 
+  Preconditions: np.shape(w) == (501,) 
+                 type(b) == float 
+                 np.shape(X) = (N, 501) for some N 
+ 
+  # &gt;&gt;&gt; pred(np.zeros(501), 1, np.ones([3, 501])) 
+  array([0.73105858, 0.73105858, 0.73105858]) 
+  # It's okay if your output differs in the last decimals 
+ 
+  &quot;&quot;&quot;</span>
+  <span class="s1">term = w.T @ X.T + b</span>
+  <span class="s1">y = sigmoid(term)</span>
+  <span class="s2">return </span><span class="s1">y</span>
+
+<span class="s0"># A = pred(np.zeros(501), 1, np.ones([3, 501]))</span>
+<span class="s0"># print(A)</span>
+
+
+<span class="s0">#%% md 
+</span><span class="s1">### Part (b) -- 9% 
+ 
+Write a function `derivative_cost` that computes and returns the gradients 
+$\frac{\partial\mathcal{L}}{\partial {\bf w}}$ and 
+$\frac{\partial\mathcal{L}}{\partial b}$. Here, `X` is the input, `y` is the prediction, and `t` is the true label. 
+ 
+ 
+ 
+</span><span class="s0">#%% md 
+</span><span class="s1">####Write your code below 
+</span><span class="s0">#%% 
+</span><span class="s2">def </span><span class="s1">derivative_cost(X</span><span class="s2">, </span><span class="s1">y</span><span class="s2">, </span><span class="s1">t):</span>
+  <span class="s5">&quot;&quot;&quot; 
+  Returns a tuple containing the gradients dLdw and dLdb. 
+ 
+  Precondition: np.shape(X) == (N, 501) for some N 
+                np.shape(y) == (N,) 
+                np.shape(t) == (N,) 
+ 
+  Postcondition: np.shape(dLdw) = (501,) 
+           type(dLdb) = float 
+  &quot;&quot;&quot;</span>
+  <span class="s1">dLdy = </span><span class="s4">2</span><span class="s1">*(y-t)/len(y)</span>
+  <span class="s1">dydu = (</span><span class="s4">1</span><span class="s1">-y)*y</span>
+  <span class="s1">dLdw = (dLdy*dydu).T @ X</span>
+  <span class="s1">dLdb = np.sum(dLdy*dydu)</span>
+  <span class="s2">return </span><span class="s1">dLdw</span><span class="s2">, </span><span class="s1">dLdb</span>
+
+<span class="s0"># B = derivative_cost(np.ones([3, 501]),A,A*0.9)</span>
+<span class="s0"># print(B)</span>
+
+
+<span class="s0">#%% md 
+</span><span class="s1">### Part (c) -- 9% 
+ 
+Now that you have a gradient function that works, we can actually run gradient descent. 
+Complete the following code that will run stochastic gradient descent training. 
+</span><span class="s0">#%% md 
+</span><span class="s1">####Write your code below 
+</span><span class="s0">#%% 
+</span><span class="s2">def </span><span class="s1">run_gradient_descent(train_x</span><span class="s2">, </span><span class="s1">train_t</span><span class="s2">, </span><span class="s1">val_x</span><span class="s2">, </span><span class="s1">val_t</span><span class="s2">, </span><span class="s1">w0</span><span class="s2">, </span><span class="s1">b0</span><span class="s2">, </span><span class="s1">mu=</span><span class="s4">0.1</span><span class="s2">, </span><span class="s1">batch_size=</span><span class="s4">100</span><span class="s2">, </span><span class="s1">max_iters=</span><span class="s4">500</span><span class="s1">):</span>
+  <span class="s5">&quot;&quot;&quot;Return the values of (w, b) after running gradient descent for max_iters. 
+  We use: 
+    - train_x and train_t as the training set 
+    - val_x and val_t as the test set 
+    - mu as the learning rate 
+    - (w0, b0) as the initial values of (w, b) 
+ 
+  Precondition: np.shape(w0) == (501,) 
+                type(b0) == float 
+ 
+  Postcondition: np.shape(w) == (501,) 
+                 type(b) == float 
+  &quot;&quot;&quot;</span>
+
+  <span class="s1">w = w0</span>
+  <span class="s1">b = b0</span>
+  <span class="s1">iter = </span><span class="s4">0</span>
+  <span class="s1">cost = np.array([])</span>
+  <span class="s1">acc = np.array([])</span>
+
+  <span class="s2">while </span><span class="s1">iter &lt; max_iters:</span>
+    <span class="s0"># shuffle the training set (there is code above for how to do this)</span>
+
+    <span class="s0"># xs are the var0, var1,...</span>
+    <span class="s0"># ts are the classes</span>
+    <span class="s1">reindex_1 = np.random.permutation(len(train_x))</span>
+    <span class="s1">train_x = train_x[reindex_1]</span>
+    <span class="s1">train_t = train_t[reindex_1]</span>
+
+    <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">range(</span><span class="s4">0</span><span class="s2">, </span><span class="s1">len(train_x)</span><span class="s2">, </span><span class="s1">batch_size): </span><span class="s0"># iterate over each minibatch</span>
+      <span class="s0"># minibatch that we are working with:</span>
+      <span class="s1">X = train_x[i:(i + batch_size)]</span>
+      <span class="s1">t = train_t[i:(i + batch_size)</span><span class="s2">, </span><span class="s4">0</span><span class="s1">]</span>
+      <span class="s0"># since len(train_x) does not divide batch_size evenly, we will skip over</span>
+      <span class="s0"># the &quot;last&quot; minibatch</span>
+      <span class="s2">if </span><span class="s1">np.shape(X)[</span><span class="s4">0</span><span class="s1">] != batch_size:</span>
+        <span class="s2">continue</span>
+
+      <span class="s0"># compute the prediction</span>
+      <span class="s1">y = pred(w</span><span class="s2">,</span><span class="s1">b</span><span class="s2">,</span><span class="s1">X)</span>
+
+      <span class="s0"># update w and b</span>
+      <span class="s1">dLdw</span><span class="s2">, </span><span class="s1">dLdb = derivative_cost(X</span><span class="s2">,</span><span class="s1">y</span><span class="s2">,</span><span class="s1">t)</span>
+      <span class="s1">w -= mu*dLdw</span>
+      <span class="s1">b -= mu*dLdb</span>
+
+      <span class="s0"># increment the iteration count</span>
+      <span class="s1">iter += </span><span class="s4">1</span>
+      <span class="s0"># compute and print the *validation* loss and accuracy</span>
+      <span class="s2">if </span><span class="s1">(iter % </span><span class="s4">10 </span><span class="s1">== </span><span class="s4">0</span><span class="s1">):</span>
+        <span class="s1">val_y = pred(w</span><span class="s2">,</span><span class="s1">b</span><span class="s2">,</span><span class="s1">val_x)</span>
+        <span class="s1">val_cost = mse_cost(val_y</span><span class="s2">,</span><span class="s1">val_t.T)</span>
+        <span class="s1">val_acc = get_accuracy(val_y</span><span class="s2">,</span><span class="s1">val_t)</span>
+        <span class="s1">cost = np.append(cost</span><span class="s2">,</span><span class="s1">val_cost)</span>
+        <span class="s1">acc = np.append(acc</span><span class="s2">,</span><span class="s1">val_acc)</span>
+        <span class="s1">print(</span><span class="s3">&quot;Iter %d. [Val Acc %.0f%%, Loss %f]&quot; </span><span class="s1">% (</span>
+                <span class="s1">iter</span><span class="s2">, </span><span class="s1">val_acc * </span><span class="s4">100</span><span class="s2">, </span><span class="s1">val_cost))</span>
+
+      <span class="s2">if </span><span class="s1">iter &gt;= max_iters:</span>
+        <span class="s2">break</span>
+
+      <span class="s0"># Think what parameters you should return for further use</span>
+
+  <span class="s2">return </span><span class="s1">w</span><span class="s2">,</span><span class="s1">b</span><span class="s2">,</span><span class="s1">cost</span><span class="s2">,</span><span class="s1">acc</span>
+
+
+<span class="s0">#%% md 
+</span><span class="s1">### Part (d) -- 9% 
+ 
+Call `run_gradient_descent` with the weights and biases all initialized to random. 
+Show what happens if the learning rate $\mu$ is too small, too large, and in between these values, where $0 &lt; \mu &lt; 1$. 
+ 
+The demonstration should be made using plots showing these effects. 
+</span><span class="s0">#%% md 
+</span><span class="s1">####Write your code below 
+</span><span class="s0">#%% 
+</span><span class="s1">w0 = np.random.randn(</span><span class="s4">501</span><span class="s1">)</span>
+<span class="s1">b0 = np.random.randn(</span><span class="s4">1</span><span class="s1">)[</span><span class="s4">0</span><span class="s1">]</span>
+
+<span class="s0"># Write your code here</span>
+
+<span class="s2">def </span><span class="s1">plot_loss_acc(train_x</span><span class="s2">, </span><span class="s1">train_t</span><span class="s2">, </span><span class="s1">val_x</span><span class="s2">, </span><span class="s1">val_t</span><span class="s2">, </span><span class="s1">w0</span><span class="s2">, </span><span class="s1">b0</span><span class="s2">, </span><span class="s1">mu_array</span><span class="s2">,</span><span class="s1">batch_size=</span><span class="s4">100</span><span class="s2">, </span><span class="s1">max_iters=</span><span class="s4">100</span><span class="s2">, </span><span class="s1">is_normalized=</span><span class="s2">True</span><span class="s1">):</span>
+  <span class="s5">&quot;&quot;&quot;Plot the validation loss and accuracy for different mus&quot;&quot;&quot;</span>
+  <span class="s1">fig</span><span class="s2">, </span><span class="s1">axs = plt.subplots(</span><span class="s4">2</span><span class="s2">, </span><span class="s4">1</span><span class="s2">, </span><span class="s1">figsize=(</span><span class="s4">6.5</span><span class="s2">, </span><span class="s4">6.5</span><span class="s1">))</span>
+  <span class="s2">if </span><span class="s1">is_normalized:</span>
+    <span class="s1">axs[</span><span class="s4">0</span><span class="s1">].set_title(</span><span class="s3">&quot;Normalized&quot;</span><span class="s1">)</span>
+  <span class="s2">else</span><span class="s1">:</span>
+    <span class="s1">axs[</span><span class="s4">0</span><span class="s1">].set_title(</span><span class="s3">&quot;Not normalized&quot;</span><span class="s1">)</span>
+  <span class="s1">axs[</span><span class="s4">0</span><span class="s1">].set_xlabel(</span><span class="s3">'Iteration'</span><span class="s1">)</span>
+  <span class="s1">axs[</span><span class="s4">0</span><span class="s1">].set_ylabel(</span><span class="s3">'Loss'</span><span class="s1">)</span>
+  <span class="s1">axs[</span><span class="s4">1</span><span class="s1">].set_xlabel(</span><span class="s3">'Iteration'</span><span class="s1">)</span>
+  <span class="s1">axs[</span><span class="s4">1</span><span class="s1">].set_ylabel(</span><span class="s3">'Accuracy'</span><span class="s1">)</span>
+
+  <span class="s2">for </span><span class="s1">mu </span><span class="s2">in </span><span class="s1">mu_array:</span>
+    <span class="s1">w</span><span class="s2">,</span><span class="s1">b</span><span class="s2">,</span><span class="s1">cost</span><span class="s2">,</span><span class="s1">acc = run_gradient_descent(train_x</span><span class="s2">, </span><span class="s1">train_t</span><span class="s2">, </span><span class="s1">val_x</span><span class="s2">, </span><span class="s1">val_t</span><span class="s2">, </span><span class="s1">w0</span><span class="s2">, </span><span class="s1">b0</span><span class="s2">, </span><span class="s1">mu)</span>
+    <span class="s1">axs[</span><span class="s4">0</span><span class="s1">].plot(range(</span><span class="s4">1</span><span class="s2">, </span><span class="s1">len(cost)+</span><span class="s4">1</span><span class="s1">)</span><span class="s2">, </span><span class="s1">cost</span><span class="s2">, </span><span class="s1">label=</span><span class="s3">'mu=%.2f' </span><span class="s1">% mu)</span>
+    <span class="s1">axs[</span><span class="s4">1</span><span class="s1">].plot(range(</span><span class="s4">1</span><span class="s2">, </span><span class="s1">len(acc)+</span><span class="s4">1</span><span class="s1">)</span><span class="s2">, </span><span class="s1">acc</span><span class="s2">, </span><span class="s1">label=</span><span class="s3">'mu=%.2f' </span><span class="s1">% mu)</span>
+
+  <span class="s1">axs[</span><span class="s4">0</span><span class="s1">].legend()</span>
+  <span class="s1">axs[</span><span class="s4">1</span><span class="s1">].legend()</span>
+  <span class="s1">plt.show()</span>
+
+<span class="s1">mu_array = [</span><span class="s4">0.0001</span><span class="s2">,</span><span class="s4">0.1</span><span class="s2">,</span><span class="s4">0.2</span><span class="s2">,</span><span class="s4">0.3</span><span class="s2">,</span><span class="s4">0.4</span><span class="s2">,</span><span class="s4">0.5</span><span class="s2">,</span><span class="s4">0.6</span><span class="s2">,</span><span class="s4">0.7</span><span class="s2">,</span><span class="s4">0.9</span><span class="s1">]</span>
+<span class="s1">plot_loss_acc(train_norm_xs</span><span class="s2">,</span><span class="s1">train_ts</span><span class="s2">,</span><span class="s1">val_norm_xs</span><span class="s2">,</span><span class="s1">val_ts</span><span class="s2">,</span><span class="s1">w0</span><span class="s2">,</span><span class="s1">b0</span><span class="s2">,</span><span class="s1">mu_array</span><span class="s2">,</span><span class="s1">is_normalized=</span><span class="s2">True</span><span class="s1">)</span>
+<span class="s0">#%% md 
+</span><span class="s1">#### Explain and discuss your results here: 
+$\mu$ controls how much the model weights are updated during the training, what size of &quot;steps&quot; we take in the negative derivative direction. 
+If $\mu$ is too small we might get stuck in a local minimum and the model will learn very slowly so the loss and accuracy will change very little after each iteration. 
+If $\mu$ is too big we might step over the universal minimum (or some other minimum which is good enough) and miss the optimal solution. The model might learn very quickly but the loss and accuracy might fluctuate alot. 
+If $\mu$ is in between we have better chances at finding a good minimum and the model will learn moderately. So the loss and accuracy will decrease steadily after each iteration. 
+ 
+</span><span class="s0">#%% md 
+</span><span class="s1">### Part (e) -- 9% 
+ 
+Call `run_gradient_descent` with the weights and biases all initialized to random values. 
+Play with the learning rate $\mu$ and the batch size and show what happens when the data is normalized and what happens when the data is not normalized. 
+ 
+The demonstration should be made using plots showing these effects. 
+</span><span class="s0">#%% md 
+</span><span class="s1">####Write your code below 
+</span><span class="s0">#%% 
+</span><span class="s1">w0 = np.random.randn(</span><span class="s4">501</span><span class="s1">)</span>
+<span class="s1">b0 = np.random.randn(</span><span class="s4">1</span><span class="s1">)[</span><span class="s4">0</span><span class="s1">]</span>
+
+<span class="s0"># Write your code here</span>
+<span class="s1">mu_array = [</span><span class="s4">0.2</span><span class="s2">,</span><span class="s4">0.3</span><span class="s2">,</span><span class="s4">0.5</span><span class="s2">,</span><span class="s4">0.6</span><span class="s1">]</span>
+
+
+<span class="s1">print(</span><span class="s3">&quot;For normalized data:&quot;</span><span class="s1">)</span>
+<span class="s1">plot_loss_acc(train_norm_xs</span><span class="s2">,</span><span class="s1">train_ts</span><span class="s2">,</span><span class="s1">val_norm_xs</span><span class="s2">,</span><span class="s1">val_ts</span><span class="s2">,</span><span class="s1">w0</span><span class="s2">,</span><span class="s1">b0</span><span class="s2">,</span><span class="s1">mu_array</span><span class="s2">,</span><span class="s1">batch_size=</span><span class="s4">110</span><span class="s2">,</span><span class="s1">is_normalized=</span><span class="s2">True,</span><span class="s1">max_iters=</span><span class="s4">200</span><span class="s1">)</span>
+
+<span class="s1">w0 = np.random.randn(</span><span class="s4">501</span><span class="s1">)</span>
+<span class="s1">b0 = np.random.randn(</span><span class="s4">1</span><span class="s1">)[</span><span class="s4">0</span><span class="s1">]</span>
+
+<span class="s1">print(</span><span class="s3">&quot;For not normalized data:&quot;</span><span class="s1">)</span>
+<span class="s1">plot_loss_acc(train_xs</span><span class="s2">,</span><span class="s1">train_ts</span><span class="s2">,</span><span class="s1">val_xs</span><span class="s2">,</span><span class="s1">val_ts</span><span class="s2">,</span><span class="s1">w0</span><span class="s2">,</span><span class="s1">b0</span><span class="s2">,</span><span class="s1">mu_array</span><span class="s2">,</span><span class="s1">batch_size=</span><span class="s4">110</span><span class="s2">,</span><span class="s1">is_normalized=</span><span class="s2">False,</span><span class="s1">max_iters=</span><span class="s4">200</span><span class="s1">)</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">#### Explain and discuss your results here: 
+When the data is normalized this ensures that no one feature dominates the others so the algorithm can learn from all the features equally. Normalization scales the features to a similar range which can help the gradient descent to find the optimal solution more efficiently (converge faster). 
+When the data is not normalized the algorithm may take longer to converge or may not converge at all especially if the features have very different scales. In the graphs above you can clearly see that the graphs for the not normalized data don't converge and fluctuate alot. 
+ 
+ 
+</span><span class="s0">#%% md 
+</span><span class="s1">### Part (f) -- 8% 
+ 
+Find the optimial value of ${\bf w}$ and $b$ using your code. Explain how you chose the learning rate $\mu$ and the batch size and how it affects the values of ${\bf w}$ and $b$. Specify in your explanation if you used the normalized data or not. Show plots demonstrating good and bad behaviors. 
+</span><span class="s0">#%% md 
+</span><span class="s1">####Write your code below 
+</span><span class="s0">#%% 
+</span><span class="s1">w0 = np.random.randn(</span><span class="s4">501</span><span class="s1">)</span>
+<span class="s1">b0 = np.random.randn(</span><span class="s4">1</span><span class="s1">)[</span><span class="s4">0</span><span class="s1">]</span>
+
+<span class="s0"># Write your code here</span>
+<span class="s0"># for the good behaviour</span>
+<span class="s1">fig</span><span class="s2">, </span><span class="s1">axs = plt.subplots(</span><span class="s4">2</span><span class="s2">, </span><span class="s4">1</span><span class="s2">, </span><span class="s1">figsize=(</span><span class="s4">6.5</span><span class="s2">, </span><span class="s4">6.5</span><span class="s1">))</span>
+<span class="s1">axs[</span><span class="s4">0</span><span class="s1">].set_title(</span><span class="s3">&quot;Good&quot;</span><span class="s1">)</span>
+<span class="s1">axs[</span><span class="s4">0</span><span class="s1">].set_xlabel(</span><span class="s3">'Iteration'</span><span class="s1">)</span>
+<span class="s1">axs[</span><span class="s4">0</span><span class="s1">].set_ylabel(</span><span class="s3">'Loss'</span><span class="s1">)</span>
+<span class="s1">axs[</span><span class="s4">1</span><span class="s1">].set_xlabel(</span><span class="s3">'Iteration'</span><span class="s1">)</span>
+<span class="s1">axs[</span><span class="s4">1</span><span class="s1">].set_ylabel(</span><span class="s3">'Accuracy'</span><span class="s1">)</span>
+
+<span class="s1">good_mu = </span><span class="s4">0.3</span>
+<span class="s1">good_batch_size = </span><span class="s4">400</span>
+<span class="s1">good_w</span><span class="s2">,</span><span class="s1">good_b</span><span class="s2">,</span><span class="s1">cost</span><span class="s2">,</span><span class="s1">acc = run_gradient_descent(train_norm_xs</span><span class="s2">, </span><span class="s1">train_ts</span><span class="s2">, </span><span class="s1">val_norm_xs</span><span class="s2">, </span><span class="s1">val_ts</span><span class="s2">, </span><span class="s1">w0</span><span class="s2">, </span><span class="s1">b0</span><span class="s2">, </span><span class="s1">mu=good_mu</span><span class="s2">, </span><span class="s1">batch_size=good_batch_size)</span>
+<span class="s1">axs[</span><span class="s4">0</span><span class="s1">].plot(range(</span><span class="s4">1</span><span class="s2">, </span><span class="s1">len(cost)+</span><span class="s4">1</span><span class="s1">)</span><span class="s2">, </span><span class="s1">cost</span><span class="s2">, </span><span class="s1">label=</span><span class="s3">'batch={} and mu={:.2f}'</span><span class="s1">.format(good_batch_size</span><span class="s2">, </span><span class="s1">good_mu))</span>
+<span class="s1">axs[</span><span class="s4">1</span><span class="s1">].plot(range(</span><span class="s4">1</span><span class="s2">, </span><span class="s1">len(acc)+</span><span class="s4">1</span><span class="s1">)</span><span class="s2">, </span><span class="s1">acc</span><span class="s2">, </span><span class="s1">label=</span><span class="s3">'batch={} and mu={:.2f}'</span><span class="s1">.format(good_batch_size</span><span class="s2">, </span><span class="s1">good_mu))</span>
+<span class="s1">axs[</span><span class="s4">0</span><span class="s1">].legend()</span>
+<span class="s1">axs[</span><span class="s4">1</span><span class="s1">].legend()</span>
+<span class="s1">plt.show()</span>
+
+<span class="s0"># for the bad behaviour</span>
+<span class="s1">fig</span><span class="s2">, </span><span class="s1">axs = plt.subplots(</span><span class="s4">2</span><span class="s2">, </span><span class="s4">1</span><span class="s2">, </span><span class="s1">figsize=(</span><span class="s4">6.5</span><span class="s2">, </span><span class="s4">6.5</span><span class="s1">))</span>
+<span class="s1">axs[</span><span class="s4">0</span><span class="s1">].set_title(</span><span class="s3">&quot;Bad&quot;</span><span class="s1">)</span>
+<span class="s1">axs[</span><span class="s4">0</span><span class="s1">].set_xlabel(</span><span class="s3">'Iteration'</span><span class="s1">)</span>
+<span class="s1">axs[</span><span class="s4">0</span><span class="s1">].set_ylabel(</span><span class="s3">'Loss'</span><span class="s1">)</span>
+<span class="s1">axs[</span><span class="s4">1</span><span class="s1">].set_xlabel(</span><span class="s3">'Iteration'</span><span class="s1">)</span>
+<span class="s1">axs[</span><span class="s4">1</span><span class="s1">].set_ylabel(</span><span class="s3">'Accuracy'</span><span class="s1">)</span>
+
+<span class="s1">bad_mu = </span><span class="s4">0.001</span>
+<span class="s1">bad_batch_size = </span><span class="s4">10</span>
+<span class="s1">bad_w</span><span class="s2">,</span><span class="s1">bad_b</span><span class="s2">,</span><span class="s1">cost</span><span class="s2">,</span><span class="s1">acc = run_gradient_descent(train_norm_xs</span><span class="s2">, </span><span class="s1">train_ts</span><span class="s2">, </span><span class="s1">val_norm_xs</span><span class="s2">, </span><span class="s1">val_ts</span><span class="s2">, </span><span class="s1">w0</span><span class="s2">, </span><span class="s1">b0</span><span class="s2">, </span><span class="s1">mu=</span><span class="s4">0.001</span><span class="s2">, </span><span class="s1">batch_size=</span><span class="s4">10</span><span class="s1">)</span>
+<span class="s1">axs[</span><span class="s4">0</span><span class="s1">].plot(range(</span><span class="s4">1</span><span class="s2">, </span><span class="s1">len(cost)+</span><span class="s4">1</span><span class="s1">)</span><span class="s2">, </span><span class="s1">cost</span><span class="s2">, </span><span class="s1">label=</span><span class="s3">'batch={} and mu={:.3f}'</span><span class="s1">.format(bad_batch_size</span><span class="s2">, </span><span class="s1">bad_mu))</span>
+<span class="s1">axs[</span><span class="s4">1</span><span class="s1">].plot(range(</span><span class="s4">1</span><span class="s2">, </span><span class="s1">len(acc)+</span><span class="s4">1</span><span class="s1">)</span><span class="s2">, </span><span class="s1">acc</span><span class="s2">, </span><span class="s1">label=</span><span class="s3">'batch={} and mu={:.3f}'</span><span class="s1">.format(bad_batch_size</span><span class="s2">, </span><span class="s1">bad_mu))</span>
+<span class="s1">axs[</span><span class="s4">0</span><span class="s1">].legend()</span>
+<span class="s1">axs[</span><span class="s4">1</span><span class="s1">].legend()</span>
+<span class="s1">plt.show()</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">#### Explain and discuss your results here: 
+I used the normalized data. 
+$\mu$: 
+I choose the $\mu$ to be not too small and not too big so the gradient descent will converge steadily (not too fast and not too slow), found it by comparing different $\mu$s above (from the plot in section (d)). You can see that $\mu$=0.2 converges fast enough and arrives at a somewhat constant loss and accuracy, meaning that the w and b are good. Same for batch size. 
+Batch size: 
+Large batch size can lead to faster convergence and higher accuracy but it can cause the algorithm to get stuck in a local minimum. A smaller batch size can lead to slower convergence and lower accuracy but it can help the algorithm to escape from local minima. 
+ 
+ 
+</span><span class="s0">#%% md 
+</span><span class="s1">### Part (g) -- 9% 
+ 
+Using the values of `w` and `b` from part (f), compute your training accuracy, validation accuracy, 
+and test accuracy. Are there any differences between those three values? If so, why? 
+</span><span class="s0">#%% md 
+</span><span class="s1">####Write your code below 
+</span><span class="s0">#%% 
+# Write your code here</span>
+
+<span class="s1">train_acc = get_accuracy(pred(good_w</span><span class="s2">,</span><span class="s1">good_b</span><span class="s2">,</span><span class="s1">train_norm_xs)</span><span class="s2">,</span><span class="s1">train_ts)</span>
+<span class="s1">val_acc = get_accuracy(pred(good_w</span><span class="s2">,</span><span class="s1">good_b</span><span class="s2">,</span><span class="s1">val_norm_xs)</span><span class="s2">,</span><span class="s1">val_ts)</span>
+<span class="s1">test_acc = get_accuracy(pred(good_w</span><span class="s2">,</span><span class="s1">good_b</span><span class="s2">,</span><span class="s1">test_xs_norm)</span><span class="s2">,</span><span class="s1">test_ts)</span>
+
+<span class="s1">print(</span><span class="s3">'train_acc = '</span><span class="s2">, </span><span class="s1">train_acc</span><span class="s2">, </span><span class="s3">' val_acc = '</span><span class="s2">, </span><span class="s1">val_acc</span><span class="s2">, </span><span class="s3">' test_acc = '</span><span class="s2">, </span><span class="s1">test_acc)</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">#### Explain and discuss your results here: 
+The three values are slightly different. That makes sense because they are calculated on different data sets. The training data's accuracy tends to be higher because we train the model on it and the validation and test accuracies tends to be close because they are both unseen data. In my case the small differences between the three accuracies suggest that my model is not overfitting or underfitting, has good generalization ability, and that the hyperparameters are appropriate. 
+</span><span class="s0">#%% md 
+</span><span class="s1">### Part (h) -- 9% 
+ 
+Writing a classifier like this is instructive, and helps you understand what happens when 
+we train a model. However, in practice, we rarely write model building and training code 
+from scratch. Instead, we typically use one of the well-tested libraries available in a package. 
+ 
+Use `sklearn.linear_model.LinearRegression` to build a linear classifier, and make predictions about the test set. Start by reading the 
+[API documentation here](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html). 
+ 
+Compute the training, validation and test accuracy of this model. 
+</span><span class="s0">#%% md 
+</span><span class="s1">####Write your code below 
+</span><span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">sklearn.linear_model</span>
+
+<span class="s0"># Write your code here</span>
+
+<span class="s1">model = sklearn.linear_model.LinearRegression()</span>
+<span class="s1">model.fit(train_norm_xs</span><span class="s2">, </span><span class="s1">train_ts)</span>
+
+<span class="s1">train_acc = model.score(train_norm_xs</span><span class="s2">, </span><span class="s1">train_ts)</span>
+<span class="s1">val_acc = model.score(val_norm_xs</span><span class="s2">, </span><span class="s1">val_ts)</span>
+<span class="s1">test_acc = model.score(test_xs_norm</span><span class="s2">, </span><span class="s1">test_ts)</span>
+
+<span class="s1">print(</span><span class="s3">'train_acc = '</span><span class="s2">, </span><span class="s1">train_acc</span><span class="s2">, </span><span class="s3">' val_acc = '</span><span class="s2">, </span><span class="s1">val_acc</span><span class="s2">, </span><span class="s3">' test_acc = '</span><span class="s2">, </span><span class="s1">test_acc)</span>
+<span class="s0">#%% md 
+</span><span class="s1">**This part helps by checking if the code worked.** 
+**Check if you get similar results. If not repair your code.** 
+ 
+</span><span class="s0">#%% md 
+</span><span class="s1">### Part (i) -- 9% 
+ 
+We trained the model with MSE loss function for a classification problem, this is not an ideal loss function for classification. 
+ 
+Please explain why using MSE loss function is not an ideal loss function for a classification problem and suggest a more suitable loss function for a classification problem. 
+</span><span class="s0">#%% md 
+</span><span class="s1">#### Write your explanation here: 
+The main issue with MSE loss function for classification is that it is not well-suited to the discrete nature of the output variable (0 and 1 in out case). The MSE loss function penalizes large errors between the predicted and actual values. It can produce gradients that are too small or too large which can cause the model to converge slowly or diverge. 
+A more suitable loss function is the cross entropy loss function. It is designed to handle the discrete nature of the output variable by measuring the difference between the predicted and actual probability distributions. 
+</span><span class="s0">#%% md 
+</span><span class="s1"># PDF export 
+To export a PDF of the completed notebook, you might find the following helper functions helpful. Here are some resources for additional learning. 
+ 
+- https://nbconvert.readthedocs.io/en/latest/ 
+ 
+- https://nbconvert.readthedocs.io/en/latest/install.html#installing-tex 
+</span><span class="s0">#%% 
+</span><span class="s1">jupyter nbconvert --to pdf notebook.ipynb</span>
+<span class="s0">#%% 
+</span><span class="s1">!sudo apt-get install texlive-xetex texlive-fonts-recommended texlive-plain-generic</span>
+<span class="s0">#%% 
+</span><span class="s1">!jupyter nbconvert --to pdf /content/drive/MyDrive/Colab_Notebooks/Assignment_1.ipynb</span>
+<span class="s0"># TODO - UPDATE ME WITH THE TRUE PATH! and UPDATE THE FILE NAME.</span></pre>
+</body>
+</html>
